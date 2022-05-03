@@ -1,0 +1,348 @@
+#+BEGIN_CENTER
+* Unhealthy Assignment 3
+
+Machine Learning
+
+Fall Period 2021
+
+Amsterdam University College
+
+Alice Hamberger
+#+END_CENTER
+
+* Imports
+I hashed all imports that I used at certain stages in my trials,
+but did not end up using in my final version.
+
+#+begin_src python :results output
+import pandas as pd
+import numpy as np
+
+# import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.linear_model import (
+    LinearRegression,
+    LogisticRegression,
+    Ridge,
+    RidgeCV,
+    Lasso,
+    LassoCV,
+    BayesianRidge,
+    SGDClassifier,
+)
+from sklearn.ensemble import (
+    RandomForestRegressor,
+    RandomForestClassifier,
+    GradientBoostingRegressor,
+    VotingClassifier,
+)
+from sklearn.tree import DecisionTreeClassifier
+
+# from sklearn.svm import SVC
+# from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import accuracy_score
+
+# from sklearn.naive_bayes import GaussianNB
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from healthy_utils import save_fig, true_false_plot
+from sklearn.preprocessing import (
+    MinMaxScaler,
+    RobustScaler,
+    StandardScaler,
+    Normalizer,
+    MaxAbsScaler,
+    PowerTransformer,
+    LabelEncoder,
+)
+from sklearn.pipeline import Pipeline
+
+# from sklearn.impute import SimpleImputer
+from sklearn.ensemble import AdaBoostClassifier
+import os
+import black
+#+end_src
+
+* Importing Data
+#+begin_src python :results output
+data = pd.read_csv("train.csv")
+test_data = pd.read_csv("test.csv")
+validation_data = pd.read_csv("val.csv")
+print(f"shape of data: {data.shape}")
+print(data.dtypes)
+#+end_src
+
+* Normalizing Data
+I compared these two functions accuracy score results to that of the accuracy
+score values when using a Simple Imputer (found in appendix B). The results were
+very similar, however, the data treated with the Simple Imputer had slightly
+lower accuracy scores.
+
+After normalizing the data, I first wanted to graph the data. I found that a
+mosaic plot was the right plot for categorical (binary data), however I didn't
+get it to work, so I moved on. My attempt is found in appendix D.
+The next plot I did was just of all points with their x-value being the true
+healthy value and their y-value being their predicted healthy value. I have
+uploaded this as a sepparate file to the git repository. This plot is mostly
+useless though, so I thought the best graph would be a bar graph with four bars:
+
+With my data type in mind, I yield four different cases, as shown by below. Each
+bar would then represent one of the four cases on the x-axis and the y-axis (the
+height of the bar) would show the amount of points that fall into each of the
+four cases. This gives some indication of what direction the algorithm sways -
+classifying to many points as healthy or unhealthy. However, I think the
+accuracy score is overal more important and for this assignment this graph
+would't give too much insight in how I can adjust my model.
+
+True Healthy Value	Predicted Healthy Value	Case
+0	0	true negative
+1	1	true positive
+0	1	false positive
+1	0	false negative
+
+#+begin_src python :results output
+# removes the rows with a null and/or infinite value in it
+def dropnullinf(d):
+    d.replace([np.inf, -np.inf], np.nan, inplace=True)
+    for column in d:
+        d = d.dropna(subset=[column])
+    return d
+
+
+dropnullinf(data)
+
+# drop rows with NaN value
+pd.DataFrame.dropna(data)
+#+end_src
+
+* Finding Best Variables for Prediction of Target Variable
+The "corr_matrix" checks the correlation between all variables and target
+variable. The corelation scale ranges from -1 to 1, where 1 is strong positive
+correlation, -1 is strong negative correlation, and values close to 0 have no
+linear correlation.
+
+Curiosly enough, the variables (columns) with values with the highest positive
+correlation were confidence variables. These confidence variables lowered the
+accuracy score when used. Therefore, I started with columns with correlation
+matrix scores close to 1. These gave better accuracy scores. I added variables
+with correlation matrix scores close to 1, which improved the accuracy score.
+Adding variables with correlation matrix scores close to 0 lowered the accuracy score.
+#+begin_src python :results output
+
+corr_matrix = data.corr()
+print(corr_matrix["healthy"].sort_values(ascending=False))
+
+# final selection of columns that work best
+columns = [
+    "antagonize",
+    "condescending",
+    "dismissive",
+    "generalisation",
+    "sarcastic",
+    "_trusted_judgments",
+    "healthy:confidence",
+    "dismissive:confidence",
+    "antagonize:confidence",
+    "hostile:confidence",
+]
+#+end_src
+
+* Train & Test Split
+#+begin_src python :results output
+Xtrain = data[columns]
+Xtest = test_data[columns]
+ytrain = data["healthy"]
+ytest = test_data["healthy"]
+#+end_src
+
+* Scaling Data
+  I ran all of the scalers and classifiers below.
+
+Models = [LinearDiscriminantAnalysis(), SVC(probability=True), GaussianNB(), RandomForestClassifier(), SGDClassifier(),
+          DecisionTreeClassifier(), KNeighborsClassifier(),
+          LogisticRegression()]
+
+Scalers = [MinMaxScaler(), MaxAbsScaler(), RobustScaler(),
+PowerTransformer(),Normalizer(), StandardScaler()]
+
+In appendix C I list the top ten combinations of Scalers and Models that I found
+according to highest accuracy score. The combination with the highest accuracy
+score is the one I mainly use. I experimented around more with which Classifiers
+to add to the ensemble classifier (named voting classifier) and soft vs. hard
+voting, this testing is also found in appendix C.
+
+'Xtrains' and 'Xtests' reffers to the scaled data hence the suffix '-s' (not plural)
+
+#+begin_src python :results output
+mima_scl = MinMaxScaler()
+st_scl = StandardScaler()
+pow_scl = PowerTransformer()
+ab_scl = MaxAbsScaler()
+
+Xtrains = mima_scl.fit_transform(Xtrain)
+Xtests = mima_scl.transform(Xtest)
+#+end_src
+
+* Classification of Data
+  My final result was an accuracy score of 95.8 (0.958) which I am very proud
+  of. Most of the improvement was due to finding the right classifiers and
+  scalers, this testing toook me at least 4 hours alone just running slightly
+  different versions.
+
+  In the appendix, where I compare different versions of my model, I use the
+  accuracy score of random forest classifier and the ensemble methods (voting
+  classifier) to compare. The reason I include the random forrest classifier
+  accuracy score, is because this was usually better than the ensemble methods.
+
+#+begin_src python :results output
+ada_clf = AdaBoostClassifier(
+    DecisionTreeClassifier(max_depth=1),
+    n_estimators=200,
+    algorithm="SAMME.R",
+    learning_rate=0.5,
+)
+
+rnd_clf = RandomForestClassifier()
+dt_clf = DecisionTreeClassifier()
+log_clf = LogisticRegression()
+voting_clf = VotingClassifier(
+    estimators=[
+        ("dt", dt_clf),
+        ("ad", ada_clf),
+        ("lr", log_clf),
+        ("rf", rnd_clf),
+    ],
+    voting="soft",
+)
+voting_clf.fit(Xtrains, ytrain)  # uses model to use data (Xtrains) to fit
+# target variable (ytrain) predict doesn't work without it
+
+
+for clf in (ada_clf, dt_clf, rnd_clf, log_clf, voting_clf):
+    clf.fit(Xtrains, ytrain)
+    ypred = clf.predict(Xtests)
+    print(clf.__class__.__name__, accuracy_score(ytest, ypred))
+
+
+#+end_src
+
+* Boring Graph
+#+begin_src python :results output
+def true_false_plot(
+    y_true,
+    y_pred,
+    fig_id,
+    tight_layout=True,
+    fig_extension="png",
+    resolution=300,
+    img_path="",
+):
+    """Function to draw true vs false predictions scatter plot and save to file
+
+    :param y_true: array of true values
+    :param y_pred: array of predicted values
+    :param fig_id: name of saved figure
+    :param tight_layout: Boolean denoted whether to use a tight layout
+    (see matplotlib documentation)
+    :param fig_extension: file type to be used for the figure
+    :param resolution: image resolution of the saved image
+    :param img_path: path to store image. Default is current folder
+    :returns: Name of stored figure
+    :rtype: string
+
+    """
+    plt.scatter(y_true, y_pred)
+    xpoints = ypoints = plt.xlim()
+
+    plt.xlabel("True Healthy Value")
+    plt.ylabel("Predicted Healthy Value")
+    plt.title("True vs Predicted Healthy Value")
+    save_fig(fig_id, resolution=resolution, img_path=img_path)
+    path = os.path.join(img_path, fig_id + "." + fig_extension)
+    return ("stored plot to in:", path)
+
+true_false_plot(ytest, ypred, "truepred")
+#+end_src
+
+* Appendix
+contains all extra work, trials and fails
+#+begin_src python :results output
+#A
+# Best Variables
+# The variables I started with: "antagonize","condescending","dismissive"
+# the resulting accuracy score of ensemble methods (em):0.94327
+# I continued adding variables with the next closest correlation matrix value
+# to -1. Once the the  only variables left with a positive score to add were
+# very close to zero, I started adding values with a strong negative
+# correlation to healthy.
+# adding generalisation and generalisation_unfair did not change the "em",
+# so I added healhty:confidence aswell.
+# Below is  my course of action.
+# "+" is adding a variable to my columns variable
+# "-" is deleting a variable from my columns variable
+# em = accuracy score of ensemble methods
+# rf = accuracy score of randomforestclassifer (rf mostly got the  highest
+# accuracy score, better than the ensemble methods.
+# +generalisation, generalisation_unfair, healthy:confidence 0.944180
+# +dismissive:confidence em:0.9439 rf:0.94847
+# +antagonize:confidence em:0.9435 rf:0.951186
+# +hostile:confidence    em:0.9435 rf:0.956836
+# +sarcastic             em:0.944406 rf:0.957062 **
+# +trustedjudgments      em:0.944632* rf:0.955480
+# -generalisation_unfair em:0.944406 rf:0.957740*
+# -generalisation        em:0.943954 rf:0.955480
+
+#B
+# Imputer
+"""
+#imputer
+imputer = SimpleImputer(strategy="median")
+imputer.fit(Xtrain)
+imputer.transform(Xtrain)"""
+# em:0.944858 rfc:0.957740***
+# em:0.945084*** 944858 rf:0.957062, 9575
+# em:0.944858 rfc:0.956836 different order
+# DATA num is new variable check with this and then u can change order!!!!
+# slightly worse than other normalizing methods above ran 5 trials
+
+#C
+# Scaling & Regression
+# top ten combinations for scalers and classifiers
+#[[0.9484745762711865, 'MaxAbsScaler()', 'DecisionTreeClassifier()']
+#[0.9489265536723164, 'StandardScaler()', 'DecisionTreeClassifier()']
+#[0.9496045197740113, 'MinMaxScaler()', 'DecisionTreeClassifier()']
+#[0.9507344632768362, 'RobustScaler()', 'DecisionTreeClassifier()']
+#[0.9536723163841808, 'Normalizer()', 'RandomForestClassifier()']
+#[0.9563841807909604, 'RobustScaler()', 'RandomForestClassifier()'
+#[0.9572881355932203, 'MaxAbsScaler()', 'RandomForestClassifier()'
+#[0.9579661016949153, 'PowerTransformer()', 'RandomForestClassifier()']
+#[0.9581920903954803, 'StandardScaler()', 'RandomForestClassifier()']
+#[0.9584180790960452, 'MinMaxScaler()', 'RandomForestClassifier()']]
+
+
+# soft vs. hard
+# em:0.95322 soft  rfc:0.956836
+# em:0.95322 hard SAME rf:0.958418
+
+# different classifiers for ensemble methods
+# svm_clf = SVC(probability=True) em:0.95322 rf:0.95638
+# -log_clf soft em:0.95412  rf:0.95819
+# -svm_clf soft em:0.95028   rf:0.9586610 WORSE BUT FASTERR
+# +log_clf soft em:0.955932*  rf:0.9584180 BEST& fast
+# +ada_clf
+
+# D
+# other things I tried but I didn't have the time to make fully work: pipeline
+# and mosaic plot. Mosaic plot is THE plot to use for two sets of binary
+#(categorical) data according to the internet.
+"""
+pipe = Pipeline([("scaler", MaxAbsScaler()), ("regressor", RandomForestRegressor()),])
+
+pipe.fit(Xtrain, ytrain)
+
+from statsmodels.graphics.mosaicplot import mosaic
+
+# mosaic(ytest, ypred)
+# index=['true healthy value', 'predicted healthy value'
+"""
+#+end_src

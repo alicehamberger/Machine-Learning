@@ -1,0 +1,112 @@
+* Assignment 5
+Machine Learning
+
+Alice Hamberger
+
+03.Dec.2021
+
+** _Introduction_
+
+This assignment is about observing a model, in this case, a neural network, and seeing how it reacts to manipulating its features. A neural network is a model loosely based on brain function with layers of nodes that pass information through the network. Neural networks can adapt to changing input and can recognize hidden patterns and are therefore used to solve machine learning problems. I decided to measure the effectiveness or suitability of the model to the data set in terms of the number of epochs according to a specified value of the test loss. Furthermore, I split the assignment into two parts: regression and classification. This allows for some clarity when approaching such a complex model, and I also noticed a significant difference in their efficiency. In this review, I will compare different datasets and walk through the observations I made for classification and regression with different feature adjustments for efficiency.
+
+
+** _Features_
+
+For the "circle", "exclusive or", and "gaussian" data set In classification, I noticed that adding the first five features one by one significantly decreases the number of epochs. The sixth feature still adds efficiency, however less, and the seventh feature does not make a difference. This was quite intuitive, as a good amount of features helps inform the model. However, some features may be very similar to other features. In the data sets for regression, the same trend appeared. Moreover, I noticed that combinations of features that were very different from each other were more effective than features that were similar to each other. This also makes sense as similar features give the model less input as there might be considerable overlap of information. These features are then potentially cut out for dimensionality reduction and clarity. For the “circle”, “eclusive or” and “gaussian” data set Iin classification, I noticed that adding the first five features one by one significantly decreases the number of epochs. The sixth feature still adds efficiency, however less, and the seventh feature does not make a difference. This was quite intuitive, as a good amount of features helps inform the model, however, some features may be very similar to other features. In the data sets for regressoion, the same trend appeared. Moreover, I noticed that combinations of features that were very different from eachother were more effective than features that were similar to eachother. This also makes sense as similar features give the model less imput as there might be a large overlap of information. These features are then potentially cut out, for purposes of dimensionality reduction and clarity. SPIRAL
+Train-Test Split Ratio
+Not suprisingly, a train-test split ratio of 90:10 produced the lowest number of epochs. For all data sets I checked that the model was still 100% accurate, which it suprisingly was. For the “spiral” data set, the train and test loss values both stil reached zero, however, when looking at the graph with the test data points, some of the points were sitting right on top of the boundary. Thiis seems risky, as it bears the possibility of overfitting, so I believe sticking to a ration of 80-20 as discussed in class yields “safer” results.
+
+** _Train-Test Split Ratio_
+
+Not surprisingly, a train-test split ratio of 90:10 produced the lowest number of epochs. For all
+data sets, I checked that the model was still 100% accurate, which it surprisingly was. For the
+&quot;spiral&quot; data set, the train and test loss values both still reached zero. However, when looking at
+the graph with the test data points, some points were sitting right on top of the boundary. This
+seems risky, as it bears the possibility of overfitting, so I believe sticking to a ratio of 80-20 as
+discussed in class yields &quot;safer&quot; results.
+
+[[ttsplit.png]]
+
+** _Regularization_
+
+Across the board for all data sets, both regularizations (L1 and L2) slowed down the model at all
+rates. This experiment is not an outlier with this finding. Regularization works very well for
+specific models. However, it is common that regularization does not work well on neural
+networks.
+
+** _Activation Function_
+
+The activation function greatly varied the model&#39;s efficiency depending on different data sets.
+Overall the classification data sets are pretty similar in terms of which feature adjustments
+improve efficiency. However, the &quot;spiral&quot; data set varies in the most efficient adjustments
+sometimes. This is the case for the activation function. For the &quot;spiral&quot; data set, the &quot;Tanh&quot; and
+&quot;ReLU&quot; functions perform approximately the same. The &quot;Linear&quot; and &quot;Sigmoid&quot; functions perform
+comparatively bad, as they both plateau at a test loss of 000,504. For regression on the “multi-
+gaussian” dataset, I observed the same trend.
+
+For the other three datasets in classification, &quot;circle&quot;, &quot;eclusive or&quot;, and &quot;gaussian&quot;, the activation
+functions performed differently. I used the &quot;circle&quot; function as an example of these three datasets
+to compare the functions average epochs numerically. The &quot;Tanh&quot; function performed best with
+an epoch average over five trials (to reach a test loss of 0) of 000,028. The &quot;linear&quot; function
+averaged to 000,033 epochs. This slight increase in epochs might be due to a slightly higher
+epoch number in general but to the normal random variation between runs, making this
+difference probably not statistically significant. The &quot;ReLU&quot; function reached an average of
+000,081 epochs, a statistically significant increase, and the &quot;sigmoid&quot; function reached an
+average of 000,239 epochs.
+
+For the &quot;linear&quot; data set with regression, the linear activation function worked best. This is
+unsurprising as a linear data set is best modelled with linear regression. The efficiency was so
+high that no hidden layers were required to reach a test loss of 0 in just one epoch. The other
+activation functions roughly performed the same and needed at least one hidden neuron layer to
+reach a test loss of zero or close to zero.
+
+
+
+** _Learning Rate_
+
+For both classification and regression, a learning rate of 0.1 performed best for all datasets.
+The &quot;circle&quot; function, for example, had an average over five runs of 000,019 epochs to reach
+a test loss of 0. At a learning rate of 0.3, the average is around the same, but there is more
+fluctuation in the test loss score making it less reliable. Below, the graphs of the test loss
+score over time for learning rates 0.1 and 0.3 are shown to demonstrate the fluctuation.
+
+[[LR01.png]]
+
+Learning rate 0.1
+
+[[LR0.3.png]]
+
+Learning rate 0.3
+
+
+** _Batch Size_
+
+For all models, there was a positive correlation between increased batch size and increased
+number of epochs to reach test loss of 0. Therefore, a batch size of 1, called stochastic
+gradient descent, showed the lowest number of epochs to reach a test loss of zero. A batch
+is the number of data points the algorithm takes each iteration to run. Stochastic gradient
+descent refers to the error gradient of a random probability distribution that is decreasing.
+
+Smaller batch size is known to need a fewer number of iterations, have higher accuracy and
+have lower running time. For most experiments, I kept the batch size at around 10 (mini-
+batch gradient descent) to observe patterns in the other variables. A batch size of 1in all
+data sets resulted in such a short running time that no patterns could be observed.
+
+
+** _Hidden layers_
+
+In general, the number of neurons in the first layer is essential for this model to be efficient.
+In a model with two hidden layers, increasing the number of nodes in the second layer while
+the first hidden layer has only one or two nodes does not decrease the number of epochs or
+wall clock time. However, if the second layer has two nodes and the number of nodes in the
+first layer is increased, then the model&#39;s efficiency dramatically increases.
+For all classification data sets, a set up of three hidden layers with 6,4 and 6 neurons
+respectively performed better than the consecutive lower or higher number of hidden
+layers of neurons.
+
+For the &quot;linear&quot; data set in regression, an increased number of hidden layers and neurons
+slowed down the model. In contrast, the &quot;mulit-gaussian&quot; data set had increased wall clock
+time for an increasing number of hidden layers and nodes. The epochs slightly increased.
+This can be explained by the fact that epoch size varies as it is the number of passes that a
+model makes through all of the training data. Furthermore, an increased number of neurons
+per layer increased efficiency more than an increased number of hidden layers.
